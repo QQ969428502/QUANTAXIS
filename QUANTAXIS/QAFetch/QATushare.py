@@ -170,7 +170,7 @@ def QA_fetch_get_stock_day(name, start='', end='', if_fq='qfq', type_='pd'):
         data['date'] = data['date'].apply(lambda x: str(x)[0:10])
         return data
 
-def QA_fetch_get_stock_data(name, start='', end='', if_fq='qfq', type_='pd'frequence='D'):
+def QA_fetch_get_stock_data(name, start='', end='', if_fq='qfq', type_='pd',frequence='D'):
 
     def fetch_data():
         data = None
