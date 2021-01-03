@@ -170,6 +170,43 @@ def QA_fetch_get_stock_day(name, start='', end='', if_fq='qfq', type_='pd'):
         data['date'] = data['date'].apply(lambda x: str(x)[0:10])
         return data
 
+def QA_fetch_get_stock_data(name, start='', end='', if_fq='qfq', type_='pd'frequence='D'):
+
+    def fetch_data():
+        data = None
+        try:
+            time.sleep(0.002)
+            pro = get_pro()
+            data = ts.pro_bar(
+                api=pro,
+                ts_code=str(name),
+                asset='E',
+                adj=_get_subscription_type(if_fq),
+                start_date=start,
+                end_date=end,
+                freq=frequence 
+            ).sort_index()
+            print('fetch done: ' + str(name))
+        except Exception as e:
+            print(e)
+            print('except when fetch data of ' + str(name))
+            time.sleep(1)
+            data = fetch_data()
+        return data
+
+    data = fetch_data()
+
+    data['date_stamp'] = data['trade_date'].apply(lambda x: cover_time(x))
+    data['code'] = data['ts_code'].apply(lambda x: str(x)[0:6])
+    data['fqtype'] = if_fq
+    if type_ in ['json']:
+        data_json = QA_util_to_json_from_pandas(data)
+        return data_json
+    elif type_ in ['pd', 'pandas', 'p']:
+        data['date'] = pd.to_datetime(data['trade_date'], format='%Y%m%d')
+        data = data.set_index('date', drop=False)
+        data['date'] = data['date'].apply(lambda x: str(x)[0:10])
+        return data
 
 def QA_fetch_get_stock_realtime():
     data = ts.get_today_all()
