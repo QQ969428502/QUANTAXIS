@@ -1173,9 +1173,9 @@ def QA_fetch_get_stock_transaction(code, start, end, retry=2, ip=None,
                     'Wrong in Getting {} history transaction data in day {}'.format(
                         code, trade_date_sse[index_]))
             else:
-                QA_util_log_info(
-                    'Successfully Getting {} history transaction data in day {}'.format(
-                        code, trade_date_sse[index_]))
+                # QA_util_log_info(
+                #     'Successfully Getting {} history transaction data in day {}'.format(
+                #         code, trade_date_sse[index_]))
                 data = data.append(data_)
         if len(data) > 0:
 
@@ -1220,9 +1220,9 @@ def QA_fetch_get_index_transaction(code, start, end, retry=2, ip=None,
                     'Wrong in Getting {} history transaction data in day {}'.format(
                         code, trade_date_sse[index_]))
             else:
-                QA_util_log_info(
-                    'Successfully Getting {} history transaction data in day {}'.format(
-                        code, trade_date_sse[index_]))
+                # QA_util_log_info(
+                #     'Successfully Getting {} history transaction data in day {}'.format(
+                #         code, trade_date_sse[index_]))
                 data = data.append(data_)
         if len(data) > 0:
 
@@ -2528,9 +2528,9 @@ def QA_fetch_get_future_transaction(code, start, end, retry=4, ip=None,
                     'Wrong in Getting {} history transaction data in day {}'.format(
                         code, trade_date_sse[index_]))
             else:
-                QA_util_log_info(
-                    'Successfully Getting {} history transaction data in day {}'.format(
-                        code, trade_date_sse[index_]))
+                # QA_util_log_info(
+                #     'Successfully Getting {} history transaction data in day {}'.format(
+                #         code, trade_date_sse[index_]))
                 data = data.append(data_)
         if len(data) > 0:
 
