@@ -712,3 +712,13 @@ def QA_SU_save_single_bond_min(code, engine, client=DATABASE):
 
     engine = select_save_engine(engine)
     engine.QA_SU_save_single_bond_min(code=code, client=client)
+
+def QA_SU_save_fundamentals(engine,client=DATABASE):
+    engine = select_save_engine(engine)
+    engine.QA_SU_save_fundamentals(client=client)
+def QA_SU_save_securities(engine,client=DATABASE):
+    engine = select_save_engine(engine)
+    engine.QA_SU_save_securities(client=client)
+def QA_SU_save_stock_min_from_transaction(engine,start_time=None,end_time=None, client=DATABASE):
+    engine = select_save_engine(engine)
+    engine.QA_SU_save_stock_min_from_transaction(client,start_time,end_time)

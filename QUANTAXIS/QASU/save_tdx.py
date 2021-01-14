@@ -24,11 +24,13 @@
 
 import concurrent
 import datetime
+import time
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import json
 import pandas as pd
 import pymongo
-
+from multiprocessing.dummy import Pool
+from QUANTAXIS.QAData import (QA_data_tick_resample_1min)
 from QUANTAXIS.QAFetch import QA_fetch_get_stock_block
 from QUANTAXIS.QAFetch.QATdx import (
     QA_fetch_get_option_day,
@@ -74,6 +76,7 @@ from QUANTAXIS.QAFetch.QATdx import (
 from QUANTAXIS.QAUtil import (
     DATABASE,
     QA_util_get_next_day,
+    QA_util_get_trade_range,
     QA_util_get_real_date,
     QA_util_log_info,
     QA_util_to_json_from_pandas,
@@ -820,6 +823,44 @@ def QA_SU_save_stock_min(client=DATABASE, ui_log=None, ui_progress=None):
     else:
         QA_util_log_info(' ERROR CODE \n ', ui_log=ui_log)
         QA_util_log_info(err, ui_log=ui_log)
+
+def QA_SU_save_stock_min_from_transaction(client=DATABASE,start_time=None,end_time=None, ui_log=None, ui_progress=None):
+    raise Exception("QA_SU_save_stock_min_from_transaction todo")
+    coll_jqData_securities= pymongo.MongoClient('mongodb://192.168.237.135:27017')['quantaxis'].jqData_securities
+    #coll_stock_min=client.stock_min_test
+    coll_stock_min=pymongo.MongoClient('mongodb://192.168.237.1:27017')['quantaxis'].stock_min_test
+    if( start_time==None)|(end_time==None):
+        print('需要start_time于end_time')
+        return
+    trade_days=QA_util_get_trade_range(start_time,end_time)
+    def _saving_work(date):
+        
+        def _saving_code(code):
+            #time.sleep(2)
+            df=QA_fetch_get_stock_transaction(code,date,date)
+            if(df is None):
+                print('没有数据 code:{},date:{},{}%'.format(code,date
+                ,str(stock_list['code'].tolist().index(code)/len(stock_list['code']))))
+                return 
+            df_1min = QA_data_tick_resample_1min(df) 
+            coll_stock_min.insert_many(df_1min.to_dict('records'))
+        
+        stock_list=pd.DataFrame([i for i in coll_jqData_securities.find({"$and":[{"date":date}
+                                            ,{"display_name":{"$not":{"$regex":"ST|退"}}}
+                                           ]})])
+        print('时间：{}，stock_list：{}'.format(date,str(len(stock_list))))
+        
+        # for code in stock_list['code'][:100].tolist():
+        #     _saving_code(code)
+
+        pool = Pool(8)
+        pool.map(_saving_code, stock_list['code'].tolist())
+        pool.close()
+        
+            
+    for date in trade_days:
+        _saving_work(date)
+      
 
 def QA_SU_save_single_stock_min(code : str, client=DATABASE, ui_log=None, ui_progress=None):
     """save single stock_min
