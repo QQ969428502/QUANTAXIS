@@ -1291,10 +1291,7 @@ class QA_Performance():
             return 0
 
     def total_pnl(self, pnl):
-        try:
-            return abs(self.total_profit(pnl) / self.total_loss(pnl))
-        except ZeroDivisionError:
-            return 0
+        return 0 if self.total_loss(pnl)==0 else abs(self.total_profit(pnl) / self.total_loss(pnl))
 
     def trading_amounts(self, pnl):
         return len(pnl)
@@ -1360,10 +1357,7 @@ class QA_Performance():
             return 0
 
     def max_pnl(self, pnl):
-        try:
-            return abs(self.max_profit(pnl) / self.max_loss(pnl))
-        except ZeroDivisionError:
-            return 0
+        return 0 if self.max_loss(pnl)==0 else abs(self.max_profit(pnl) / self.max_loss(pnl))
 
     def netprofio_maxloss_ratio(self, pnl):
         if len(self.loss_pnl(pnl)) > 0:
