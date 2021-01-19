@@ -248,6 +248,16 @@ class QA_Dealer():
                     self.market_data.get('date',
                                          None)
                 )
+                if(self.trade_time is None):
+                    try:
+                        self.market_data=self.market_data.reset_index()
+                        self.trade_time = self.market_data.get(
+                                                'datetime',
+                                                self.market_data.get('date',
+                                                                    None)
+                                            )
+                    except :
+                        RuntimeError("market_data 没有 datatime 或 date")
             elif float(self.order.price) > float(self.market_data.get('high')) and int(self.order.towards) > 0:
                 # 买入价格> 最高价
                 #==> 按最高价成交
