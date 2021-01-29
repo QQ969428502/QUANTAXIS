@@ -345,4 +345,5 @@ class Test_QA_Fetch(unittest.TestCase):
             #print(type(open_price1), type(close_price1) ,type(high_price1), type(low_price1), type(volume1), type(amount1), type(date1))
         pass
 
-    pass
+if __name__ == '__main__':
+    unittest.main()

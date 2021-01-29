@@ -1,5 +1,3 @@
-import sys 
-sys.path.append('e:\\github\\my-QUANTAXIS')
 
 import concurrent.futures
 import datetime
@@ -21,13 +19,18 @@ TRADE_HOUR_END = 17
 JQUSERNAME=QASETTING.get_config('JQUSER','Name')
 JQUSERPASSWD=QASETTING.get_config('JQUSER','Password')
 
-# 导入聚宽模块且进行登录
 try:
     import jqdatasdk
-    # 请自行将 JQUSERNAME 和 JQUSERPASSWD 修改为自己的账号密码
+        # 请自行将 JQUSERNAME 和 JQUSERPASSWD 修改为自己的账号密码
+    pass
 except:
     raise ModuleNotFoundError
-jqdatasdk.auth(JQUSERNAME, JQUSERPASSWD)
+def auth_jq():
+    # 导入聚宽模块且进行登录
+    
+    jqdatasdk.auth(JQUSERNAME, JQUSERPASSWD)
+
+
 #jqdatasdk.auth('15550022101','022101')
 def now_time():
     """
@@ -49,7 +52,7 @@ def QA_SU_save_stock_min(client=DATABASE, ui_log=None, ui_progress=None):
     聚宽实现方式
     save current day's stock_min data
     """
-    
+    auth_jq()
 
     # 股票代码格式化
     code_list = list(
@@ -233,20 +236,26 @@ def _get_fundamentals_to_db(collection,current_date):
     collection.insert_many(df_db.to_dict('records'))
     QA_util_log_info("QA_SU_save_fundamentals:{},count:{}".format(current_date,str(len(df_db)))) 
 
-def _get_trade_days(coll,act):
-    _first_date='2015-01-02'
-    _last_date='2015-01-02'
+def _get_trade_days(coll,act,**kwagrs):
+    _first_date='2015-01-05'
+    _last_date='2015-01-05'
+    _filter=None
+    if('code' in kwagrs):
+        _filter={'code':kwagrs['code']}
+
     try:
-        _first_date=coll.find_one(sort=[('date',1)])['date']
+        _first_date=coll.find_one(filter=_filter,sort=[('date',1)])['date']
     except Exception as e:
-        QA_util_log_expection("QA_SU_save_{}==error:{}".format(act,str(e)))
-        return[]
+        #QA_util_log_expection("QA_SU_save_{}==error:{}".format(act,str(e)))
+        #return[]
+        pass
     try:
-        _last_date=coll.find_one(sort=[('date',-1)])['date']
+        _last_date=coll.find_one(filter=_filter,sort=[('date',-1)])['date']
     except Exception as e:
-        QA_util_log_expection("QA_SU_save_{}==error:{}".format(act,str(e)))
-        return[]
-    QA_util_log_info("QA_SU_save_{}:first_date:{} & last_date:{}".format(act,_first_date,_last_date))
+        #QA_util_log_expection("QA_SU_save_{}==error:{}".format(act,str(e)))
+        #return[]
+        pass
+    QA_util_log_info("QA_SU_save_{}:kwagrs:{},first_date:{} & last_date:{}".format(kwagrs,act,_first_date,_last_date))
 
     last_real_date= str(now_time())[0:10]
     
@@ -260,7 +269,7 @@ def _get_trade_days(coll,act):
     return trade_days
 
 def QA_SU_save_fundamentals(client=DATABASE, ui_log=None, ui_progress=None):
-    
+    auth_jq()
     QA_util_log_info("QA_SU_save_fundamentals==========begin")
     coll=client.jqData_fundamentals
     
@@ -275,7 +284,7 @@ def QA_SU_save_fundamentals(client=DATABASE, ui_log=None, ui_progress=None):
 
     QA_util_log_info("QA_SU_save_fundamentals==========end")
 def QA_SU_save_securities(client=DATABASE, ui_log=None, ui_progress=None):
-    
+    auth_jq()
     QA_util_log_info("QA_SU_save_securities==========begin")
     coll=client.jqData_securities
     
@@ -290,20 +299,56 @@ def QA_SU_save_securities(client=DATABASE, ui_log=None, ui_progress=None):
 
     QA_util_log_info("QA_SU_save_securities==========end")
 
-if __name__ == "__main__":
-    #QA_SU_save_stock_min()
-    collection = DATABASE['jqData_fundamentals']  #valuation
-    securities_coll= DATABASE['jqData_securities']  #valuation
-    start_date='2018-01-02'
-    end='2018-04-30'
-    trade_days=QA_util_get_trade_range(start_date,end)
-    for day in trade_days:
+def _get_index_min_to_db(jq_code, current_date,coll_index_min):
+    jq_index_min=jqdatasdk.get_price(jq_code, start_date=current_date+' 09:00:00', end_date=current_date+' 15:00:00', 
+    frequency='1m',  skip_paused=False, fq=None)
+    jq_index_min=jq_index_min.assign(code=jq_code.split('.')[0],datetime=pd.to_datetime(jq_index_min.index))
+    jq_index_min=jq_index_min.assign(
+                        up_count=0,down_count=0,
+                        date=jq_index_min['datetime'].apply(lambda x: str(x)[0:10]),
+                        date_stamp=jq_index_min['datetime'].apply(
+                            lambda x: QA.QA_util_date_stamp(x)),
+                        time_stamp=jq_index_min['datetime'].apply(
+                            lambda x: QA.QA_util_time_stamp(x)),
+                        type='1min').set_index('datetime', drop=False,
+                                              inplace=False).rename(columns={"volume": "vol", "money": "amount"})
+    coll_index_min.insert_many(jq_index_min.to_dict('records'))
+def QA_SU_save_index_min(client=DATABASE, ui_log=None, ui_progress=None):
+    """
+    如果要增加某指数，修改codes即可，自动从2015-01-05补齐
+    """
+    auth_jq()
+    QA_util_log_info("QA_SU_save_index_min==========begin")
+    coll=client.index_min
+    codes=['000001.XSHG','000300.XSHG','399001.XSHE']
+    for code in codes:
+        trade_days=_get_trade_days(coll,'index_min',code=code.split('.')[0]) 
         try:
-            _get_fundamentals_to_db(collection,day)
-            _get_securities_to_db(securities_coll,day)
-            print(day+" success")
+            for day in trade_days:
+                _get_index_min_to_db(code,day,coll)
+            #get_all_securities_to_db(day)
+            
         except Exception as e:
-            print(day+" error")
-            print(str(e))
-            break
+            QA_util_log_expection("QA_SU_save_index_min==error:{}".format(str(e)))
+
+    QA_util_log_info("QA_SU_save_index_min==========end")
+if __name__ == "__main__":
+    print(jqdatasdk.get_query_count())
+    # collection = DATABASE['jqData_fundamentals']  #valuation
+    # securities_coll= DATABASE['jqData_securities']  #valuation
+    # coll_index_min=DATABASE['index_min']
+    # start_date='2018-01-02'
+    # end='2018-04-30'
+    # trade_days=QA_util_get_trade_range(start_date,end)
+    # for day in trade_days:
+    #     try:
+    #         _get_fundamentals_to_db(collection,day)
+    #         _get_securities_to_db(securities_coll,day)
+    #         print(day+" success")
+    #     except Exception as e:
+    #         print(day+" error")
+    #         print(str(e))
+    #         break 
+    QA_SU_save_index_min()
+    print(jqdatasdk.get_query_count())
     pass

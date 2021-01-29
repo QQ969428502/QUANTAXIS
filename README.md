@@ -306,3 +306,17 @@ lab 投研
 
 
 
+# 安装问题
+
+pip3.7 install -r requirements.txt
+
+## enum 错误 
+直接删除 pip3.7 uninstall enum34
+
+## openssl/cryptography 问题
+安装openssl拷贝include文件并不能解决问题
+通过whl 安装cryptography
+查看支持的whl格式
+import pip._internal
+print(pip._internal.pep425tages.get_supported())
+pip install    xxx.whl
