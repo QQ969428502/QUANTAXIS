@@ -2061,7 +2061,6 @@ def QA_SU_save_stock_info(client=DATABASE, ui_log=None, ui_progress=None):
         QA_util_log_info(' ERROR CODE \n ', ui_log=ui_log)
         QA_util_log_info(err, ui_log=ui_log)
 
-
 def QA_SU_save_stock_transaction(
         client=DATABASE,
         ui_log=None,
@@ -2073,7 +2072,8 @@ def QA_SU_save_stock_transaction(
         client {[type]} -- [description] (default: {DATABASE})
     """
 
-    stock_list = QA_fetch_get_stock_list().code.unique().tolist()
+    df_stock_list = QA_fetch_get_stock_list()
+    stock_list=df_stock_list[df_stock_list['code'].str[0:3]!='300'].code.unique().tolist() 
     coll = client.stock_transaction
     coll.create_index(
         [
@@ -2098,34 +2098,42 @@ def QA_SU_save_stock_transaction(
                     # 🛠todo  str(stock_list[code]) 参数不对？
                     QA_fetch_get_stock_transaction(
                         str(code),
-                        '2019-01-01',
-                        str(now_time())[0:10]
+                        '2020-02-01',
+                        '2020-12-31'
+                        #str(now_time())[0:10]
                     )
                 )
             )
         except:
             err.append(str(code))
 
-    for i_ in range(len(stock_list)):
-        # __saving_work('000001')
+    executor = ThreadPoolExecutor(max_workers=4)
+    # executor.map((__saving_work,  stock_list[i_], coll),URLS)
+    res = {
+        executor.submit(__saving_work,
+                        stock_list[i_]
+                        )
+        for i_ in range(len(stock_list))
+    }
+    count = 0
+    for i_ in concurrent.futures.as_completed(res):
         QA_util_log_info(
-            'The {} of Total {}'.format(i_,
+            'The {} of Total {}'.format(count,
                                         len(stock_list)),
             ui_log=ui_log
         )
 
-        strLogProgress = 'DOWNLOAD PROGRESS {} '.format(
-            str(float(i_ / len(stock_list) * 100))[0:4] + '%'
+        strProgress = 'DOWNLOAD PROGRESS {} '.format(
+            str(float(count / len(stock_list) * 100))[0:4] + '%'
         )
-        intLogProgress = int(float(i_ / len(stock_list) * 10000.0))
-
+        intProgress = int(count / len(stock_list) * 10000.0)
         QA_util_log_info(
-            strLogProgress,
-            ui_log=ui_log,
+            strProgress,
+            ui_log,
             ui_progress=ui_progress,
-            ui_progress_int_value=intLogProgress
+            ui_progress_int_value=intProgress
         )
-        __saving_work(stock_list[i_])
+        count = count + 1
     if len(err) < 1:
         QA_util_log_info('SUCCESS', ui_log=ui_log)
     else:
@@ -7423,7 +7431,7 @@ if __name__ == '__main__':
     # QA_SU_save_stock_day()
     # QA_SU_save_stock_xdxr()
     # QA_SU_save_stock_min()
-    # QA_SU_save_stock_transaction()
+    QA_SU_save_stock_transaction()#185246
     # QA_SU_save_index_day()
     # QA_SU_save_stock_list()
     # QA_SU_save_index_min()
@@ -7433,7 +7441,7 @@ if __name__ == '__main__':
     #QA_SU_save_future_day()
 
     #QA_SU_save_future_min()
-    QA_SU_save_hkstock_list()
-    QA_SU_save_hkstock_day()
+    #QA_SU_save_hkstock_list()
+    #QA_SU_save_hkstock_day()
     #QA_SU_save_hkstock_min()
-    #QA_SU_save_single_hkstock_min(code="00338")
+    #QA_SU_save_single_hkstock_min(code="00338") 
